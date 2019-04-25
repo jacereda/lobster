@@ -730,7 +730,7 @@ void Nil::Generate(CodeGen &cg, size_t retval) const {
 
 void IntConstant::Generate(CodeGen &cg, size_t retval) const {
     if (!retval) return;
-    if (integer == (int)integer) cg.Emit(IL_PUSHINT, (int)integer); 
+    if (integer == (int)integer) cg.Emit(IL_PUSHINT, (int)integer);
     else cg.Emit(IL_PUSHINT64, (int)integer, (int)(integer >> 32));
 }
 
@@ -984,6 +984,10 @@ void FunRef::Generate(CodeGen &cg, size_t retval) const {
     }
 }
 
+void EnumRef::Generate(CodeGen &cg, size_t retval) const {
+    cg.Dummy(retval);
+}
+
 void UDTRef::Generate(CodeGen &cg, size_t retval) const {
     cg.Dummy(retval);
 }
@@ -1020,7 +1024,7 @@ void NativeCall::Generate(CodeGen &cg, size_t retval) const {
             if (!retval) vmop += 2;  // These always return nil.
             cg.Emit(vmop, nf->idx);
         }
-    } else if (nf->name == "resume") {  // FIXME: make a vm op.
+    } else if (nf->CanChangeControlFlow()) {
         cg.Emit(vmop, nf->idx);
         cg.SplitAttr(cg.Pos());
         if (!retval) cg.GenPop({ nattype, natlt });
@@ -1315,7 +1319,7 @@ void Constructor::Generate(CodeGen &cg, size_t retval) const {
     for (auto c : children) {
         cg.Gen(c, retval);
     }
-    if (!retval) return; 
+    if (!retval) return;
     cg.TakeTemp(Arity(), true);
     auto offset = cg.GetTypeTableOffset(exptype);
     if (IsUDT(exptype->t)) {
